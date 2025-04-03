@@ -6,23 +6,15 @@ public class AVLTree<T extends Comparable<T>> {
     private AVLNode<T> root;
     private boolean status;
 
-    public AVLNode<T> getRoot() {
-        return this.root;
-    }
-
-    public boolean getStatus() {
-        return this.status;
-    }
-
-    public void setStatus(boolean status) {
+    public void setStatus(boolean status) { // Define o status da árvore como balanceada ou não
         this.status = status;
     }
 
-    public boolean isEmpty() {
+    public boolean isEmpty() { // Verifica se a raiz é nula
         return this.root == null;
     }
 
-    public void insert(T value) {
+    public void insert(T value) { 
         this.root = insertNode(this.root, value);
         this.status = false;
     }
@@ -148,9 +140,9 @@ public class AVLTree<T extends Comparable<T>> {
 
     private void passeioEmOrdemNaArvore(AVLNode<T> node) {
         if (node != null) {
-            passeioEmOrdemNaArvore(node.getLeft());
+            passeioEmOrdemNaArvore(node.getLeft()); // Entra em uma função recursiva para acessar os nós a esqueda da raiz da subárvore
             System.out.println(node.getInfo());
-            passeioEmOrdemNaArvore(node.getRight());
+            passeioEmOrdemNaArvore(node.getRight()); // Entra em uma função recursiva para acessar os nós a direita da raiz da subárvore
         }
     }
 
@@ -163,11 +155,11 @@ public class AVLTree<T extends Comparable<T>> {
     }
 
     private void passeioPorNivelNaArvore(AVLNode<T> node){
-        Queue <AVLNode<T>> queue;
+        Queue <AVLNode<T>> queue; // Lista para armazenar os nós
         AVLNode<T> aux = node;
 
-        int multiplier = 1;
-        int numberOfTerms = 0;
+        int multiplier = 1; // Variável que ajudará a manipular os valores por linha durante a exibição dos nós com base em uma proporção de 2
+        int numberOfTerms = 0; // Conta quantos nós estão sendo impressos numa linha para controlar a quantidade de termos exibidos 
         
         if(!this.isEmpty()){
             queue = new Queue<>();
@@ -187,15 +179,97 @@ public class AVLTree<T extends Comparable<T>> {
                     numberOfTerms++; 
                 }
 
-                if(numberOfTerms == multiplier){
+                if(numberOfTerms == multiplier){ // Quando o número de termos se torna igual ao número esperado de nós por linha, o "multiplier" é multiplicado por 2
                     System.out.println();
                     multiplier *= 2;
                     numberOfTerms = 0;
                 }
-                
-                
-                    
+  
             }
         }
     }
+
+    public void remove(T info){
+        if(this.isEmpty()){
+            System.out.println("Árvore vazia."); 
+        } else{
+            this.root = removeNode(this.root, info); // Efetua as modificações na árvore e retorna à raiz
+            System.out.println("Nó " + info + " foi removido da árvore.");
+        }
+    }
+
+    private AVLNode<T> removeNode(AVLNode<T> node, T info){
+        if(node != null){
+
+            int result = info.compareTo(node.getInfo()); // Primeiramente, deve-se encontrar o valor a ser removido ao comparar os termos da árvore com o valor a ser removido
+
+            if(result < 0){
+                node.setLeft(removeNode(node.getLeft(), info)); // Se o valor buscado for menor que o do nó atual, a busca irá ser a esquerda
+            } else if(result > 0){
+                node.setRight(removeNode(node.getRight(), info)); // Se o valor buscado for menor que o do nó atual, a busca irá ser a direita
+            } else{ // Valor encontrado
+                if(node.getLeft() == null && node.getRight() == null){ // Quando o nó não tem filhos... 
+                    return null; // O nó removido será transformado em "null"
+                } else if(node.getLeft() == null){ // Quando o nó não tem filhos à esquerda... 
+                    return node.getRight(); // O nó será transformado no nó a sua direita
+                } else if(node.getRight() == null){ // Quando o nó não tem filhos à esquerda... 
+                    return node.getLeft(); // O nó será transformado no nó a sua esquerda
+                
+                } else{
+                    AVLNode<T> aux = searchLowestValue(node.getRight()); // Quando o nó tem ambos os filhos, ele irá procurar o menor a partir da direita dele... 
+                    node.setInfo(aux.getInfo()); // Começa o processo de substituição dos nó removido pelo nó supracitado
+                    node.setRight(removeNode(node.getRight(), aux.getInfo())); 
+                    
+
+                }
+            }
+            node = balancearAVLTree(node); // Função para balancear a árvore após a remoção e reorganização dos nós
+            return node; 
+
+        } else{
+            return null; // Ao receber um nó vazio, ele deve retornar um nó vazio também
+        }
+    }
+
+    private AVLNode<T> searchLowestValue(AVLNode<T> lowestNode){ // Método que busca intensivamente o menor nó a esquerda
+        while (lowestNode.getLeft() != null) {
+            lowestNode = lowestNode.getLeft();
+        }
+        return lowestNode;
+    }
+
+    private AVLNode<T> balancearAVLTree(AVLNode<T> node){ // Método para balancear a árvore
+        if(node != null){ 
+
+            int fatBalOfRemovedNode = node.getFatBal(); // Fator de balanceamento do nó a ser removido
+
+            // Quando a organização ao remover o nó produzir uma rotação simples à esquerda
+            if(node.getRight() != null && fatBalOfRemovedNode == 2 && node.getRight().getFatBal() == 1){
+                return rotateLeft(node);
+            }
+
+            // Quando a organização ao remover o nó produzir uma rotação simples à direita
+            if(node.getRight() != null && fatBalOfRemovedNode == -2 && node.getLeft().getFatBal() == -1){
+                return rotateRight(node);
+            }
+
+            // Quando a organização ao remover o nó produzir uma rotação dupla à direita
+            if(fatBalOfRemovedNode == -2 && node.getLeft().getFatBal() == 1){
+                node.setLeft(rotateLeft(node.getLeft())); // Provoca uma rotação simples a esquerda
+                return rotateRight(node);
+            }
+
+            // Quando a organização ao remover o nó produzir uma rotação dupla à direita
+            if(fatBalOfRemovedNode == 2 && node.getRight().getFatBal() == -1){
+                node.setRight(rotateRight(node.getRight())); // Provoca uma rotação simples a direita
+                return rotateLeft(node);
+            } 
+
+            return node; // No caso da árvore estar balanceada, nenhum procedimento será executado
+
+        } else{
+            return null; 
+        }
+    }
+
 }
